@@ -180,9 +180,3 @@ $ java -jar target/check-service-0.0.1-SNAPSHOT.jar
 </br>
 </br>
 
-## Conclusion
-
-Now you can use this Viewing-Limit-System.
-
-Contact with my github profiles / dbals4818@gmail.com
-
