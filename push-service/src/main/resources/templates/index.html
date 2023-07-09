@@ -1,0 +1,195 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>B tv</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js" integrity="sha384-3LK/3kTpDE/Pkp8gTNp2gR/2gOiwQ6QaO7Td0zV76UFJVhqLl4Vl3KL1We6q6wR9" crossorigin="anonymous"></script>
+    <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="js/sockjs-0.3.4.min.js"></script>
+    <script src="js/stomp.min.js"></script>
+    <link rel = "stylesheet" type="text/css" href="css/main.css">
+</head>
+<body>
+<div class="wrapper">
+    <!-- HEADER -->
+    <header>
+        <div class="btvLogo">
+            <a id="logo" href="#home"><img src="img/logo.png"></a>
+        </div>
+        <nav class="main-nav">
+            <a href="#tvShows">TV 다시보기</a>
+            <a href="#movies">영화</a>
+            <a href="#drama">해외 드라마</a>
+            <a href="#zemkids">ZEM 키즈</a>
+            <a href="#animation">애니메이션</a>
+            <a href="#documents">다큐/음악</a>
+        </nav>
+        <nav class="sub-nav">
+            <a href="#"><i class="fas fa-search sub-nav-logo"></i></a>
+            <a href="#"><i class="fas fa-bell sub-nav-logo"></i></a>
+            <a href="#"><b id="userName">[[${#httpServletRequest.remoteUser}]]</b></a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </header>
+    <!-- END OF HEADER -->
+
+    <!-- MAIN CONTAINER -->
+    <section class="main-container" >
+        <div class="location" id="home">
+            <h1 id="home">[8월 4주] 해외드라마 TOP 30</h1>
+            <div class="box">
+                /*your-vod-thumbnail*/
+                <a href=""><img class="connect_vod" src="" alt=""></a>
+                <a href=""><img class="connect_vod" src="" alt=""></a>
+                <a href=""><img class="connect_vod" src="" alt=""></a>
+                <a href=""><img class="connect_vod" src="" alt=""></a>
+                <a href=""><img class="connect_vod" src="" alt=""></a>
+                <a href=""><img class="connect_vod" src="" alt=""></a>
+            </div>
+        </div>
+
+
+        <h1 id="myList">새로 들어온 해외 드라마</h1>
+        <div class="box">
+            /*your-vod-thumbnail*/
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+        </div>
+
+        <h1 id="tvShows">등골이 오싹해지는 범죄 스릴러 드라마</h1>
+        <div class="box">
+            /*your-vod-thumbnail*/
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+         </div>
+
+
+        <h1 id="movies">[8월 3주] 미국/영국 드라마 TOP 30</h1>
+        <div class="box">
+            /*your-vod-thumbnail*/
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+            <a href=""><img class="connect_vod" src="" alt=""></a>
+        </div>
+
+        <!-- END OF MAIN CONTAINER -->
+    </section>
+</div>
+
+
+<script>
+
+    /**
+     * Send an action to the server.
+     */
+
+    function connectVOD(event) {
+        event.preventDefault();
+
+        let watch_info = {};
+        watch_info.pcid = $("#userName").text();
+        watch_info.episode_id = "episode_id";
+        watch_info.stb_id = "stb_id";
+        watch_info.play_start = "2020-08-18'T'15:41:00";
+        watch_info.mac_address = "mac_address";
+        watch_info.running = true;
+
+        $.ajax({
+            url: "/send",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify(watch_info),
+            dataType: JSON
+        });
+
+        return;
+    }
+
+    /*
+     * Open the web socket and subscribe /notify channel to limit simultaneous viewing
+     */
+    function connect() {
+
+        // Init the SockJS object
+        let socket = new SockJS('/ws');
+        let stompClient = Stomp.over(socket);
+
+        // Subscribe the '/notify' channel
+        stompClient.connect({}, function (frame) {
+            stompClient.subscribe('/user/queue/notify', function (notification) {
+
+                // Call the notify function when receive a notification
+                let response = JSON.parse(notification.body);
+                notify(response);
+            });
+            stompClient.subscribe('/user/queue/connect', function (notification) {
+
+                //Call the redirect function when receive a success response
+                window.location = "/notifications";
+            })
+        });
+
+        return;
+    } // function connect
+
+    function notify(response) {
+        let result = confirm(response.exist_user + " is watching VOD now. Are you sure you want to disconnect?");
+        if (result) {
+            forceConnect(response);
+            //and redirect to VOD watching page
+            window.location = "/notifications";
+        }
+        return;
+    }
+
+    /*
+    *   Force connection
+    */
+    function forceConnect(response) {
+
+        let newUser = response.new_user;
+
+        //declare watch info in client
+        let watch_info = {};
+        watch_info.pcid = newUser;
+        watch_info.episode_id = "episode_id";
+        watch_info.stb_id = "stb_id";
+        watch_info.play_start = "2020-08-18'T'15:41:00";
+        watch_info.mac_address = "mac_address";
+
+        response.watch_info = watch_info;
+
+        $.ajax({
+            url: "/force",
+            type: "POST",
+            contentType: 'application/json',
+            data: JSON.stringify(response),
+            dataType: JSON
+        });
+
+    }//function force connect
+
+
+    /**
+     * Init operations.
+     */
+    $(document).ready(function () {
+        connect();
+        $(".connect_vod").on("click", connectVOD);
+    });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+>
+<head>
+    <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="js/sockjs-0.3.4.min.js"></script>
+    <script src="js/stomp.min.js"></script>
+    <style>
+        body {
+            overflow: hidden;
+        }
+        .vod_image{
+            width:100%;
+        }
+        .vod{
+            background-size: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class = "vod"><img class="vod_image" src = "img/play_img.png" onclick="stopVOD('stop')" ></div>
+<br/>
+<hr/>
+
+</body>
+<!-- Javascript functions -->
+<script>
+
+    /**
+     * Open the web socket connection and subscribe the "/notify" channel.
+     */
+
+    function connect() {
+
+        // Create and init the SockJS object
+        var socket = new SockJS('/ws');
+        var stompClient = Stomp.over(socket);
+
+        // Subscribe the '/notify' channel
+        stompClient.connect({}, function (frame) {
+            stompClient.subscribe('/user/queue/disconnect', function (notification) {
+
+                // Call the notify function when receive a notification
+                notify(JSON.parse(notification.body));
+            });
+        });
+
+        return;
+    } // function connect
+
+
+    /**
+     * Display the notification message.
+     */
+
+    function notify(message) {
+        alert("The user '" + message.new_user + "' connected this VOD. You have been disconnected.");
+        location.href = "/";
+    }
+
+    /*
+     * Send stop action to the server.
+     * if client stops VOD, redirect to main Page.
+     */
+
+    function stopVOD(status) {
+
+        let watch_info = {};
+        watch_info.pcid = $("#userName").text();
+        watch_info.episode_id = "episode_id";
+        watch_info.stb_id = "stb_id";
+        watch_info.mac_address = "mac_address";
+        watch_info.running = false;
+
+        $.ajax({
+            url: "/stop",
+            type: "PATCH",
+            contentType: 'application/json',
+            data: JSON.stringify(watch_info),
+            dataType: JSON
+        });
+
+        if (status === "stop") {
+            window.location = "/";
+        }
+
+    }
+
+    function startVOD() {
+
+        let watch_info = {};
+        watch_info.pcid = $("#userName").text();
+        watch_info.episode_id = "episode_id";
+        watch_info.stb_id = "stb_id";
+        watch_info.mac_address = "mac_address";
+        watch_info.running = true;
+
+        $.ajax({
+            url: "/send",
+            type: "PATCH",
+            contentType: 'application/json',
+            data: JSON.stringify(watch_info),
+            dataType: JSON
+        });
+    }
+
+    /**
+     * Init operations.
+     */
+    $(document).ready(function () {
+        // Start the web socket connection.
+        connect();
+    });
+
+</script>
+
+</html>
